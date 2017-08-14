@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8" />
+		<link rel="stylesheet" type="text/css" href="css/style.css" />
+		<title>JS AJAX</title>
+	</head>
+<body>
+<h2>JS AJAX</h2>
+
+<h3>AJAX</h3>
+
+<p>在 JS 中，因为直接使用表单来提交数据会跳转到一个新的页面，并且网络不好时会产生404错误，因此可以使用 JS 来提交数据，并且用请求回来的数据更新 HTML 页面，这也叫作 AJAX 请求，具体代码如下</p>
+
+<pre><code>function success(text) \{
+var textarea = document.getElementById(&#39;test-response-text&#39;);
+textarea.value = text;
+}
+
+function fail(code) \{
+var textarea = document.getElementById(&#39;test-response-text&#39;);
+textarea.value = &#39;Error code: &#39; + code;
+}
+
+var request = new XMLHttpRequest(); // 新建XMLHttpRequest对象
+
+request.onreadystatechange = function () \{ // 状态发生变化时，函数被回调
+if (request.readyState === 4) \{ // 成功完成
+// 判断响应结果:
+if (request.status === 200) \{
+// 成功，通过responseText拿到响应的文本:
+return success(request.responseText);
+} else \{
+// 失败，根据响应码判断失败原因:
+return fail(request.status);
+}
+} else \{
+// HTTP请求还在继续...
+}
+}
+
+// 发送请求:
+request.open(&#39;GET&#39;, &#39;/api/categories&#39;);
+request.send();
+
+alert(&#39;请求已发送，请等待响应…&#39;);
+</code></pre>
+
+<p>这其中，onreadystatechange 是一个回调函数，其作用就是先声明并且定义，在满足条件时调用这个函数。open 函数有三个参数，第一个指定请求方式，第二个指定 URL ，第三个为是否使用异步，默认为 true，因此第三个参数一般无需指定，否则会陷入<em>假死</em>状态，整个页面会卡住。</p>
+
+<h3>跨域请求</h3>
+
+<p>值得注意的一点是，在这里的 URL 使用的是<em>相对路径</em>，当使用一个不同的网址在 console 界面一定会报错，这是因为 JS 在 AJAX 请求中<em>不允许进行跨域请求</em>。现在解决跨域请求的方式为 JSONP，即在 <code>head</code> 标签内新增一个 <code>&lt;script&gt;</code> 节点，并且将其属性 <code>src=&#39;xxx&#39;</code> 为你想要的并且提供 API 接口的网站。一般这类型的网站都会传回一个它定义好的函数和参数，因此需要自己在 JS 中写好这个回调函数。</p>
+
+<p>回调函数：</p>
+
+<pre><code>function refreshPrice(data) {
+var p = document.getElementById(&#39;test-jsonp&#39;);
+p.innerHTML = &#39;当前价格：&#39; +
+data[&#39;0000001&#39;].name +&#39;: &#39; + 
+data[&#39;0000001&#39;].price + &#39;；&#39; +
+data[&#39;1399001&#39;].name + &#39;: &#39; +
+data[&#39;1399001&#39;].price;
+}
+</code></pre>
+
+<p>触发函数：</p>
+
+<pre><code>function getPrice() {
+var
+js = document.createElement(&#39;script&#39;),
+head = document.getElementsByTagName(&#39;head&#39;)[0];
+js.src = &#39;http://api.money.126.net/data/feed/0000001,1399001?callback=refreshPrice&#39;;
+head.appendChild(js);
+}
+</code></pre>
+
+<p>可以看到触发函数的 URL 中有一个 <code>callback=refreshPrice</code> 这就是一开始我们写好的回调函数。这样就可以实现 AJAX 的跨域加载。</p>
+
+<h3>HTML5 跨域请求</h3>
+
+<p>又称为 CORS ，其实现的原理为，自己的浏览器在向服务器发出请求时，包头中有一个 <code>origin=my.com</code> ，对方收到请求后返回数据时，包头中有一个 <code>Access-Control-Allow-Origin=my.com</code> 或者是 <code>*</code> ，这样说明服务器允许作为跨域请求的服务器。</p>
+
+</body>
+</html>
+
