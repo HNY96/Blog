@@ -57,6 +57,7 @@ JQ 对象可以很方便的修改和获取 DOM，在这里列出以下函数
 - keydown, keyup, keypress **仅作用在获得焦点的`input``textarea`上**
 - focus, blur, change, submit
 - ready 这个相当于原来的 `window.onload()`只有在页面全部加载完成时才会调用`on`绑定的函数，一般有这么几种写法：
+
 			$(document).on('ready', function () {
 				$('#testForm).on('submit', function () {
 					alert('submit!');
@@ -106,4 +107,76 @@ JQ 对象可以很方便的修改和获取 DOM，在这里列出以下函数
 	...
 
 **注意**：`slideUp`是对高度进行变化，然而非`block`元素没有`height`属性，因此只能使用 CSS3 的`transition`来进行改变。因此 JQ 也非万能的:)
+
+### AJAX
+
+JQ 也封装了原来 JS 所用的 AJAX ，详情见[我的Github](https://github.com/HNY96/Blog/blob/master/blog%20js/JS%20AJAX.md)。因此在 JQ 中对于 AJAX 的限制和 JS 中是一样的，只不过封装的更为抽象和高级。具体的一些函数如下：
+
+`$.ajax('url', [Object)`
+URL 即为发出请求的那个网站，第二个参数是一个对象，这里面可以对一些常用的参数进行修改：
+
+- `async` 是否进行异步请求，默认为`true`，一般无需更改，否则可能使浏览器陷入假死状态
+- `method` 发送请求时的方法，默认为`GET`，可以修改为`POST``PUT`等
+- `contentType` 发送 `POST`时的数据格式
+- `data` 发送的数据，可以是字符串，数组或者是对象，其会根据发送方法的不同自动封装成合适的格式
+- `headers` 发送额外的 HTTP 请求头，必须为对象
+- `dataType` 接受的数据格式，可以设置为`html``xml``json``text`等
+
+在发送完成之后，可以用_链式写法_处理各种回调
+	var jqxhr = $.ajax('/api/categories', {
+	    dataType: 'json'
+	}).done(function (data) {
+	    ajaxLog('成功, 收到的数据: ' + JSON.stringify(data));
+	}).fail(function (xhr, status) {
+	    ajaxLog('失败: ' + xhr.status + ', 原因: ' + status);
+	}).always(function () {
+	    ajaxLog('请求完成: 无论成功或失败都会调用');
+	});
+
+`$.get('url', [Object)`
+由于 `GET` 请求的普遍性，因此被单独抽象成了一个函数。对象中放着想要发送的参数。还有一个 `$.post()` 大同小异，在这里不加赘述
+
+`$.getJSON('url', [Object).done(function (data) {...});`
+这个函数采用了默认的 `GET` 方法，然后对得到的数据进行进一步操作
+
+由于 JS 对 AJAX 的安全限制，如要进行使用 JSONP 的跨域加载，那么需要在 `ajax()` 第二个参数中加一个 `jsonp:'callback'`
+
+### 扩展
+
+在编程中，如果有重复性的操作，那么第一想法便是将其抽象成一个函数。JQ 中也提供了这样一个接口，使得 coder 可以自定义一些方法。
+
+	$.fn.highlight1 = function () {
+		this.css('background-color', '...').css('color', '...');
+		 return this
+	 }
+
+这是一个最基本的想法，其中至于为什么要 `return` 回来，是因为如果不这样的话那么这个函数的后面无法继续串行执行其他函数。
+
+如果用户想要自定义强调时的背景色和字体颜色时：
+
+	$.fn.highlight2 = function (option) {
+		 var backgroundColor = option && option.backgroundColor || '...';
+		 var color = option && option.color || '...';
+		 this.css('background-color', backgroundColor).css('color', color);
+		 return this;
+	 }
+
+这也是一种实现方法，但是又有一种问题出现了：
+
+> 如果用户想要自定义默认的强调样式该怎么办？
+
+于是就有了最终版本的代码
+
+	$.fn.highlight = function(options) {
+		 var opts = $.extend({}, $.fn.highlight.defaults, options);
+		 this.css('background-color', opts.backgroundColor).css('color', opts.color);
+		 return this;
+	 }
+	 
+	 $.fn.highlight.defaults = {
+		 backgroundColor: '...',
+		 color: '...'
+	 }
+
+在这里的 `$.extend()` 函数会接受至少三个参数，第一个参数为 `target` ，即最后的参数聚集地。后面的参数都必须为 `Object` 格式，优先级是_越靠后的优先级越大_，因此将用户指定的默认样式放到系统默认的后面，这样如果用户传进来了 `opts` 参数，那么就会优先使用用户指定的样式。除此之外，用户还可以更改 `$.fn.highlight.defaults` ，这样就无需每次调用时都指定了。 
 
